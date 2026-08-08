@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+  >
+
+  <meta name="theme-color" content="#F7F5F2">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <title>Cócteles & Bebidas | OXXO</title>
+
+  <meta
+    name="description"
+    content="Recetas rápidas, fáciles y deliciosas con ingredientes que encuentras en OXXO."
+  >
+
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <style>
+    :root{
+      --red:#E30613;
+      --red-dark:#C9000B;
+      --yellow:#FFD000;
+      --black:#141414;
+      --gray:#77736F;
+      --line:#E9E5DF;
+      --bg:#F7F5F2;
+      --white:#FFFFFF;
+      --shadow:0 18px 55px rgba(20,20,20,.13);
+    }
+
+    *{
+      box-sizing:border-box;
+      -webkit-tap-highlight-color:transparent;
+    }
+
+    html,body{
+      margin:0;
+      width:100%;
+      height:100%;
+    }
+
+    body{
+      min-height:100dvh;
+      overflow:hidden;
+      color:var(--black);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,Helvetica,sans-serif;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(255,208,0,.13), transparent 32%),
+        radial-gradient(circle at 100% 100%, rgba(227,6,19,.08), transparent 34%),
+        var(--bg);
+    }
+
+    .app{
+      width:100%;
+      max-width:540px;
+      height:100dvh;
+      margin:0 auto;
+      display:grid;
+      grid-template-rows:auto 1fr auto;
+      position:relative;
+    }
+
+    /* =========================
+       HEADER
+    ========================= */
+
+    .header{
+      z-index:30;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      align-items:center;
+      gap:12px;
+      padding:
+        calc(9px + env(safe-area-inset-top))
+        15px
+        8px;
+    }
+
+    .header-art{
+      min-width:0;
+      height:47px;
+      display:flex;
+      align-items:center;
+    }
+
+    .header-art img{
+      display:block;
+      width:auto;
+      height:43px;
+      max-width:100%;
+      object-fit:contain;
+      object-position:left center;
+    }
+
+    .header-actions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-shrink:0;
+    }
+
+    .page-number,
+    .icon-button{
+      border:1px solid rgba(0,0,0,.06);
+      background:rgba(255,255,255,.94);
+      box-shadow:0 5px 18px rgba(0,0,0,.05);
+    }
+
+    .page-number{
+      min-width:55px;
+      height:34px;
+      padding:0 10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      color:#69645F;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .icon-button{
+      width:34px;
+      height:34px;
+      padding:0;
+      border-radius:50%;
+      color:#37332F;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      font-size:16px;
+    }
+
+    /* =========================
+       MAIN VIEWER
+    ========================= */
+
+    .content{
+      position:relative;
+      min-height:0;
+      padding:3px 10px 7px;
+    }
+
+    .viewer-shell{
+      position:relative;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      border-radius:25px;
+      background:#FFF;
+      border:1px solid rgba(0,0,0,.07);
+      box-shadow:var(--shadow);
+    }
+
+    .viewer-shell::before{
+      content:"";
+      position:absolute;
+      z-index:16;
+      left:0;
+      right:0;
+      top:0;
+      height:4px;
+      background:linear-gradient(90deg,var(--red) 0 76%,var(--yellow) 76% 100%);
+    }
+
+    .progress-area{
+      position:absolute;
+      z-index:18;
+      top:13px;
+      left:18px;
+      right:18px;
+      height:3px;
+      overflow:hidden;
+      border-radius:999px;
+      background:rgba(0,0,0,.07);
+    }
+
+    .progress{
+      height:100%;
+      width:0;
+      border-radius:inherit;
+      background:linear-gradient(90deg,var(--red),#F23A44);
+      transition:width .35s ease;
+    }
+
+    .viewer{
+      position:relative;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      background:linear-gradient(180deg,#FFF,#FCFBF9);
+      touch-action:pan-y;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+
+    .track{
+      width:100%;
+      height:100%;
+      display:flex;
+      will-change:transform;
+      transition:transform .40s cubic-bezier(.22,.72,.24,1);
+    }
+
+    .slide{
+      flex:0 0 100%;
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:22px 4px 7px;
+      overflow:hidden;
+    }
+
+    canvas{
+      display:block;
+      max-width:100%;
+      max-height:100%;
+    }
+
+    /* =========================
+       LOADER + ERROR
+    ========================= */
+
+    .loading{
+      position:absolute;
+      inset:0;
+      z-index:100;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      gap:14px;
+      background:#FFF;
+    }
+
+    .loader-title{
+      font-size:15px;
+      font-weight:850;
+      letter-spacing:.2px;
+    }
+
+    .loader-bar{
+      width:130px;
+      height:4px;
+      overflow:hidden;
+      border-radius:999px;
+      background:#ECEAE7;
+    }
+
+    .loader-bar::after{
+      content:"";
+      display:block;
+      width:45%;
+      height:100%;
+      border-radius:inherit;
+      background:var(--red);
+      animation:loadingBar 1.05s ease-in-out infinite;
+    }
+
+    @keyframes loadingBar{
+      0%{transform:translateX(-110%)}
+      100%{transform:translateX(290%)}
+    }
+
+    .loading small{
+      color:#89837D;
+      font-size:10px;
+      font-weight:650;
+    }
+
+    .error{
+      position:absolute;
+      inset:0;
+      z-index:120;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:30px;
+      text-align:center;
+      background:#FFF;
+    }
+
+    .error-box{max-width:295px}
+
+    .error-icon{
+      width:48px;
+      height:48px;
+      margin:0 auto 14px;
+      display:grid;
+      place-items:center;
+      border-radius:15px;
+      color:var(--red);
+      font-size:22px;
+      font-weight:900;
+      background:rgba(227,6,19,.08);
+    }
+
+    .error strong{
+      display:block;
+      margin-bottom:7px;
+      font-size:16px;
+    }
+
+    .error p{
+      margin:0;
+      color:#777;
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    /* =========================
+       SWIPE HINT
+    ========================= */
+
+    .swipe-hint{
+      position:absolute;
+      z-index:25;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:9px 14px;
+      border-radius:999px;
+      color:#FFF;
+      font-size:11px;
+      font-weight:750;
+      white-space:nowrap;
+      pointer-events:none;
+      background:rgba(17,17,17,.80);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      box-shadow:0 7px 20px rgba(0,0,0,.18);
+      transition:opacity .35s ease,transform .35s ease;
+    }
+
+    .swipe-hint.hide{
+      opacity:0;
+      transform:translate(-50%,8px);
+    }
+
+    /* =========================
+       TIKTOK CTA
+    ========================= */
+
+    .tiktok-cta{
+      position:absolute;
+      z-index:45;
+      left:17px;
+      right:17px;
+      bottom:18px;
+      opacity:0;
+      visibility:hidden;
+      transform:translateY(15px);
+      transition:.35s ease;
+    }
+
+    .tiktok-cta.visible{
+      opacity:1;
+      visibility:visible;
+      transform:translateY(0);
+    }
+
+    .tiktok-cta a{
+      min-height:55px;
+      padding:10px 15px;
+      display:grid;
+      grid-template-columns:39px 1fr 22px;
+      align-items:center;
+      gap:10px;
+      text-decoration:none;
+      color:#FFF;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(14,14,14,.95);
+      backdrop-filter:blur(15px);
+      -webkit-backdrop-filter:blur(15px);
+      box-shadow:0 13px 34px rgba(0,0,0,.27);
+    }
+
+    .tiktok-icon{
+      width:39px;
+      height:39px;
+      display:grid;
+      place-items:center;
+      border-radius:12px;
+      font-size:18px;
+      font-weight:900;
+      background:linear-gradient(135deg,#25F4EE,#FE2C55);
+    }
+
+    .tiktok-copy{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+
+    .tiktok-copy strong{
+      font-size:13px;
+      font-weight:850;
+    }
+
+    .tiktok-copy small{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      color:rgba(255,255,255,.68);
+      font-size:9px;
+      font-weight:600;
+    }
+
+    .tiktok-arrow{
+      opacity:.72;
+      font-size:21px;
+    }
+
+    /* =========================
+       NAVIGATION
+    ========================= */
+
+    .navigation{
+      display:grid;
+      grid-template-columns:54px 1fr 54px;
+      align-items:center;
+      gap:10px;
+      padding:
+        9px
+        15px
+        calc(10px + env(safe-area-inset-bottom));
+    }
+
+    .nav-button{
+      width:50px;
+      height:50px;
+      padding:0;
+      border:0;
+      border-radius:17px;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      color:#FFF;
+      font-size:27px;
+      font-weight:500;
+      background:linear-gradient(145deg,#EA0B18,var(--red-dark));
+      box-shadow:0 9px 24px rgba(227,6,19,.22);
+      transition:transform .15s ease,opacity .2s ease;
+    }
+
+    .nav-button:active{
+      transform:scale(.92);
+    }
+
+    .nav-button:disabled{
+      opacity:.17;
+      box-shadow:none;
+      cursor:default;
+    }
+
+    .dots{
+      min-width:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:7px;
+    }
+
+    .dot{
+      width:7px;
+      height:7px;
+      padding:0;
+      border:0;
+      border-radius:50%;
+      cursor:pointer;
+      background:#CBC7C2;
+      transition:all .28s ease;
+    }
+
+    .dot.active{
+      width:25px;
+      border-radius:999px;
+      background:var(--red);
+    }
+
+    /* =========================
+       RESPONSIVE
+    ========================= */
+
+    @media(max-width:390px){
+      .header{
+        gap:8px;
+        padding-left:12px;
+        padding-right:12px;
+      }
+
+      .header-art{
+        height:42px;
+      }
+
+      .header-art img{
+        height:38px;
+      }
+
+      .page-number{
+        min-width:50px;
+        padding:0 8px;
+      }
+
+      .content{
+        padding-left:7px;
+        padding-right:7px;
+      }
+    }
+
+    @media(min-width:650px){
+      body{padding:18px}
+
+      .app{
+        height:calc(100dvh - 36px);
+      }
+
+      .viewer-shell{
+        border-radius:30px;
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      .track{transition:none}
+    }
+  </style>
+</head>
+
+<body>
+
+<main class="app">
+
+  <!-- HEADER CON IMAGEN -->
+  <header class="header">
+
+    <div class="header-art">
+      <img
+        src="./header.png"
+        alt="OXXO · Cócteles y Bebidas · Fáciles, rápidos y deliciosos"
+      >
+    </div>
+
+    <div class="header-actions">
+
+      <div class="page-number" id="counter">
+        · / ·
+      </div>
+
+      <button
+        class="icon-button"
+        id="fullscreen"
+        type="button"
+        aria-label="Pantalla completa"
+      >
+        ⛶
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- CARRUSEL -->
+  <section class="content">
+
+    <div class="viewer-shell">
+
+      <div class="progress-area">
+        <div class="progress" id="progress"></div>
+      </div>
+
+      <div class="viewer" id="viewer">
+
+        <div class="track" id="track"></div>
+
+        <div class="loading" id="loading">
+          <div class="loader-title">Preparando tus recetas</div>
+          <div class="loader-bar"></div>
+          <small>Cargando recetario...</small>
+        </div>
+
+        <div class="error" id="error">
+          <div class="error-box">
+            <div class="error-icon">!</div>
+
+            <strong>
+              No pudimos cargar el recetario
+            </strong>
+
+            <p>
+              Verifica que <b>recetario.pdf</b>
+              esté en la misma carpeta que
+              <b>index.html</b>.
+            </p>
+          </div>
+        </div>
+
+        <div class="swipe-hint" id="hint">
+          <span>←</span>
+          Desliza para descubrir
+          <span>→</span>
+        </div>
+
+        <!-- SALE SOLO EN LA ÚLTIMA HOJA -->
+        <div class="tiktok-cta" id="tiktok">
+
+          <a
+            href="https://www.tiktok.com/discover/buzz-ballz-mexico-oxxo"
+            target="_blank"
+            rel="noopener"
+          >
+
+            <div class="tiktok-icon">♪</div>
+
+            <div class="tiktok-copy">
+              <strong>¿Quieres más ideas?</strong>
+              <small>Descubre más preparaciones en TikTok</small>
+            </div>
+
+            <div class="tiktok-arrow">›</div>
+
+          </a>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- NAVEGACIÓN -->
+  <nav class="navigation">
+
+    <button
+      class="nav-button"
+      id="prev"
+      type="button"
+      aria-label="Página anterior"
+    >
+      ‹
+    </button>
+
+    <div class="dots" id="dots"></div>
+
+    <button
+      class="nav-button"
+      id="next"
+      type="button"
+      aria-label="Página siguiente"
+    >
+      ›
+    </button>
+
+  </nav>
+
+</main>
+
+
+<script>
+
+  /* ==============================
+     CONFIGURACIÓN
+  ============================== */
+
+  const PDF_URL = "./recetario.pdf";
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+
+  /* ==============================
+     ELEMENTOS
+  ============================== */
+
+  const track =
+    document.getElementById("track");
+
+  const viewer =
+    document.getElementById("viewer");
+
+  const counter =
+    document.getElementById("counter");
+
+  const progress =
+    document.getElementById("progress");
+
+  const loading =
+    document.getElementById("loading");
+
+  const error =
+    document.getElementById("error");
+
+  const prev =
+    document.getElementById("prev");
+
+  const next =
+    document.getElementById("next");
+
+  const dotsContainer =
+    document.getElementById("dots");
+
+  const hint =
+    document.getElementById("hint");
+
+  const tiktok =
+    document.getElementById("tiktok");
+
+  const fullscreen =
+    document.getElementById("fullscreen");
+
+
+  /* ==============================
+     ESTADO
+  ============================== */
+
+  let pdf = null;
+
+  let currentPage = 0;
+
+  let totalPages = 0;
+
+  let slides = [];
+
+  let startX = 0;
+
+  let startY = 0;
+
+
+  /* ==============================
+     INICIAR
+  ============================== */
+
+  async function init(){
+
+    try{
+
+      pdf = await pdfjsLib
+        .getDocument({
+          url: PDF_URL
+        })
+        .promise;
+
+      totalPages =
+        pdf.numPages;
+
+      createSlides();
+
+      createDots();
+
+      /* Cargamos portada primero */
+      await renderPage(0);
+
+      loading.style.display =
+        "none";
+
+      updateUI();
+
+      /* Precarga siguiente */
+      if(totalPages > 1){
+        renderPage(1);
+      }
+
+      setTimeout(
+        () => {
+          hint.classList.add("hide");
+        },
+        4300
+      );
+
+    }
+
+    catch(err){
+
+      console.error(err);
+
+      loading.style.display =
+        "none";
+
+      error.style.display =
+        "flex";
+
+    }
+
+  }
+
+
+  /* ==============================
+     CREAR SLIDES
+  ============================== */
+
+  function createSlides(){
+
+    track.innerHTML = "";
+
+    slides = [];
+
+    for(
+      let i = 0;
+      i < totalPages;
+      i++
+    ){
+
+      const slide =
+        document.createElement("article");
+
+      slide.className =
+        "slide";
+
+      const canvas =
+        document.createElement("canvas");
+
+      canvas.setAttribute(
+        "aria-label",
+        `Página ${i + 1}`
+      );
+
+      slide.appendChild(canvas);
+
+      track.appendChild(slide);
+
+      slides.push({
+        canvas,
+        rendered:false,
+        rendering:false
+      });
+
+    }
+
+  }
+
+
+  /* ==============================
+     RENDERIZAR PÁGINA
+  ============================== */
+
+  async function renderPage(
+    index,
+    force = false
+  ){
+
+    if(
+      index < 0 ||
+      index >= totalPages
+    ){
+      return;
+    }
+
+    const item =
+      slides[index];
+
+    if(item.rendering){
+      return;
+    }
+
+    if(
+      item.rendered &&
+      !force
+    ){
+      return;
+    }
+
+    item.rendering =
+      true;
+
+    try{
+
+      const page =
+        await pdf.getPage(index + 1);
+
+      const base =
+        page.getViewport({
+          scale:1
+        });
+
+      const availableWidth =
+        viewer.clientWidth - 8;
+
+      const availableHeight =
+        viewer.clientHeight - 29;
+
+      const fitScale =
+        Math.min(
+          availableWidth / base.width,
+          availableHeight / base.height
+        );
+
+      /* Calidad Retina sin disparar memoria */
+      const pixelRatio =
+        Math.min(
+          window.devicePixelRatio || 1,
+          2
+        );
+
+      const viewport =
+        page.getViewport({
+          scale:
+            fitScale *
+            pixelRatio
+        });
+
+      const canvas =
+        item.canvas;
+
+      canvas.width =
+        Math.round(viewport.width);
+
+      canvas.height =
+        Math.round(viewport.height);
+
+      canvas.style.width =
+        `${viewport.width / pixelRatio}px`;
+
+      canvas.style.height =
+        `${viewport.height / pixelRatio}px`;
+
+      const context =
+        canvas.getContext(
+          "2d",
+          {
+            alpha:false
+          }
+        );
+
+      context.fillStyle =
+        "#FFFFFF";
+
+      context.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      await page.render({
+        canvasContext:context,
+        viewport:viewport
+      }).promise;
+
+      item.rendered =
+        true;
+
+    }
+
+    catch(err){
+
+      console.error(
+        `Error en página ${index + 1}`,
+        err
+      );
+
+    }
+
+    finally{
+
+      item.rendering =
+        false;
+
+    }
+
+  }
+
+
+  /* ==============================
+     PUNTOS
+  ============================== */
+
+  function createDots(){
+
+    dotsContainer.innerHTML =
+      "";
+
+    for(
+      let i = 0;
+      i < totalPages;
+      i++
+    ){
+
+      const dot =
+        document.createElement("button");
+
+      dot.type =
+        "button";
+
+      dot.className =
+        "dot";
+
+      dot.setAttribute(
+        "aria-label",
+        `Ir a la página ${i + 1}`
+      );
+
+      dot.addEventListener(
+        "click",
+        () => goTo(i)
+      );
+
+      dotsContainer.appendChild(dot);
+
+    }
+
+  }
+
+
+  /* ==============================
+     ACTUALIZAR INTERFAZ
+  ============================== */
+
+  function updateUI(){
+
+    track.style.transform =
+      `translateX(-${currentPage * 100}%)`;
+
+    counter.textContent =
+      `${currentPage + 1} / ${totalPages}`;
+
+    const percentage =
+      (
+        (currentPage + 1) /
+        totalPages
+      ) * 100;
+
+    progress.style.width =
+      `${percentage}%`;
+
+    prev.disabled =
+      currentPage === 0;
+
+    next.disabled =
+      currentPage ===
+      totalPages - 1;
+
+    document
+      .querySelectorAll(".dot")
+      .forEach(
+        (dot,index) => {
+
+          dot.classList.toggle(
+            "active",
+            index === currentPage
+          );
+
+        }
+      );
+
+    /* TikTok solamente en última página */
+    tiktok.classList.toggle(
+      "visible",
+      currentPage ===
+      totalPages - 1
+    );
+
+    if(currentPage > 0){
+      hint.classList.add("hide");
+    }
+
+  }
+
+
+  /* ==============================
+     CAMBIAR PÁGINA
+  ============================== */
+
+  async function goTo(index){
+
+    const newIndex =
+      Math.max(
+        0,
+        Math.min(
+          index,
+          totalPages - 1
+        )
+      );
+
+    if(newIndex === currentPage){
+      return;
+    }
+
+    currentPage =
+      newIndex;
+
+    updateUI();
+
+    await renderPage(currentPage);
+
+    /* Precarga adyacentes */
+    renderPage(currentPage + 1);
+
+    renderPage(currentPage - 1);
+
+  }
+
+
+  /* ==============================
+     BOTONES
+  ============================== */
+
+  prev.addEventListener(
+    "click",
+    () => {
+      goTo(currentPage - 1);
+    }
+  );
+
+  next.addEventListener(
+    "click",
+    () => {
+      goTo(currentPage + 1);
+    }
+  );
+
+
+  /* ==============================
+     SWIPE EN MÓVIL
+  ============================== */
+
+  viewer.addEventListener(
+    "touchstart",
+    event => {
+
+      const touch =
+        event.touches[0];
+
+      startX =
+        touch.clientX;
+
+      startY =
+        touch.clientY;
+
+    },
+    {
+      passive:true
+    }
+  );
+
+  viewer.addEventListener(
+    "touchend",
+    event => {
+
+      const touch =
+        event.changedTouches[0];
+
+      const dx =
+        touch.clientX - startX;
+
+      const dy =
+        touch.clientY - startY;
+
+      if(
+        Math.abs(dx) > 45 &&
+        Math.abs(dx) >
+        Math.abs(dy) * 1.12
+      ){
+
+        if(dx < 0){
+
+          goTo(
+            currentPage + 1
+          );
+
+        }
+
+        else{
+
+          goTo(
+            currentPage - 1
+          );
+
+        }
+
+      }
+
+    },
+    {
+      passive:true
+    }
+  );
+
+
+  /* ==============================
+     TECLADO
+  ============================== */
+
+  document.addEventListener(
+    "keydown",
+    event => {
+
+      if(
+        event.key ===
+        "ArrowRight"
+      ){
+        goTo(currentPage + 1);
+      }
+
+      if(
+        event.key ===
+        "ArrowLeft"
+      ){
+        goTo(currentPage - 1);
+      }
+
+    }
+  );
+
+
+  /* ==============================
+     FULL SCREEN
+  ============================== */
+
+  fullscreen.addEventListener(
+    "click",
+    async () => {
+
+      try{
+
+        if(
+          !document.fullscreenElement
+        ){
+
+          await document
+            .documentElement
+            .requestFullscreen();
+
+        }
+
+        else{
+
+          await document
+            .exitFullscreen();
+
+        }
+
+      }
+
+      catch(err){
+
+        /* iPhone Safari puede ignorarlo */
+        console.log(
+          "Pantalla completa no disponible."
+        );
+
+      }
+
+    }
+  );
+
+
+  /* ==============================
+     RESIZE / ROTACIÓN
+  ============================== */
+
+  let resizeTimer;
+
+  window.addEventListener(
+    "resize",
+    () => {
+
+      clearTimeout(
+        resizeTimer
+      );
+
+      resizeTimer =
+        setTimeout(
+          async () => {
+
+            if(!pdf){
+              return;
+            }
+
+            await renderPage(
+              currentPage,
+              true
+            );
+
+            renderPage(
+              currentPage + 1,
+              true
+            );
+
+          },
+          300
+        );
+
+    }
+  );
+
+
+  /* ==============================
+     START
+  ============================== */
+
+  window.addEventListener(
+    "load",
+    init
+  );
+
+</script>
+
+</body>
+</html>
